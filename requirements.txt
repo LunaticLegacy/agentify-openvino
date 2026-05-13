@@ -1,0 +1,12 @@
+# Agentify dependencies
+# Base deps (already installed for the main project)
+openvino
+openvino-genai
+
+# Tool dependencies
+requests>=2.31.0
+
+# API server (already installed)
+fastapi
+uvicorn
+pydantic
