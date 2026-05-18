@@ -19,6 +19,14 @@ import time
 from typing import List, Optional
 from pathlib import Path
 
+
+class GenerationInterrupted(Exception):
+    """
+    Raised when the user presses Ctrl+C during model generation.
+    The partial output is discarded and NOT added to conversation history.
+    """
+    pass
+
 import openvino as ov
 import openvino_genai as ov_genai
 
@@ -307,11 +315,16 @@ class Agent:
                 self.pipe.generate(prompt, generation_config=config,
                                    streamer=wrapper_streamer)
             except KeyboardInterrupt:
-                pass  # allow Ctrl+C to stop generation cleanly
+                # Let external streamers flush their buffers (e.g. SmartStreamer
+                # needs to emit remaining colored content before we raise).
+                if external_streamer:
+                    external_streamer.finish() if hasattr(external_streamer, 'finish') else None
+                else:
+                    print(flush=True)
+                # Don't add partial output to history — let the caller know.
+                raise GenerationInterrupted()
             finally:
                 if external_streamer:
-                    # External streamers have a finish() hook (e.g. SmartStreamer
-                    # uses it to flush remaining buffered content)
                     external_streamer.finish() if hasattr(external_streamer, 'finish') else None
                 else:
                     print(flush=True)
