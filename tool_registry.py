@@ -29,7 +29,11 @@ class Tool:
             props = {}
             required = []
             for p_name, p_param in sig.parameters.items():
-                p_type = str(p_param.annotation) if p_param.annotation != inspect.Parameter.empty else "string"
+                if p_param.annotation != inspect.Parameter.empty:
+                    # Get the type name properly (e.g., 'int' not '<class 'int'>')
+                    p_type = p_param.annotation.__name__ if hasattr(p_param.annotation, '__name__') else str(p_param.annotation)
+                else:
+                    p_type = "string"
                 type_map = {"str": "string", "int": "integer", "float": "number", "bool": "boolean"}
                 js_type = type_map.get(p_type, "string")
                 props[p_name] = {"type": js_type, "description": f"Parameter {p_name}"}

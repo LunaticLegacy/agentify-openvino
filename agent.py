@@ -367,6 +367,7 @@ class Agent:
 def create_agent(
     model_path: str = "/home/luna/Documents/llm/models/qwen3-4b-int8-ov/",
     device: str = "CPU",
+    max_tool_rounds: int = 3
 ) -> Agent:
     """Factory function to create a ready-to-use agent with defaults."""
-    return Agent(model_path=model_path, device=device)
+    return Agent(model_path=model_path, device=device, max_tool_rounds=max_tool_rounds)

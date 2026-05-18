@@ -197,6 +197,17 @@ def main():
     print("Interactive mode. Type / to open command palette.")
     print("Press Ctrl+C to interrupt the model; press Ctrl+C twice to exit.\n")
 
+    # ── Flush stdin ────────────────────────────────────────────────────
+    # Any keystrokes typed during the ~2-3s model initialization are
+    # buffered in the kernel's input queue.  If we don't discard them,
+    # readline will consume them as user input, leading to prompt
+    # corruption (ghost characters, backspace breaking "You: ").
+    import termios as _termios
+    try:
+        _termios.tcflush(sys.stdin, _termios.TCIFLUSH)
+    except Exception:
+        pass  # non-TTY stdin (piped input) will fail here, which is fine
+
     pending_exit = False  # track first Ctrl+C for double-press-to-exit
 
     while True:

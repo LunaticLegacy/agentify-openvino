@@ -10,7 +10,7 @@ import requests
 def web_search(query: str, count: int = 5) -> str:
     """Search the web for a query. Returns a list of results with titles and snippets."""
     try:
-        url = f"https://www.google.com/search?q={urllib.parse.quote_plus(query)}&num={min(count, 10)}"
+        url = f"https://www.bing.com/search?q={urllib.parse.quote_plus(query)}&num={min(count, 10)}"
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
         }
