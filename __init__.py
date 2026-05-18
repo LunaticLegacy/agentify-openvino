@@ -14,5 +14,13 @@ Quick start:
 
 from .agent import Agent, create_agent
 from .tool_registry import Tool, ToolRegistry
+from .streamers import SmartStreamer, ThinkColorStreamer
 
-__all__ = ["Agent", "create_agent", "Tool", "ToolRegistry"]
+__all__ = [
+    "Agent", 
+    "create_agent", 
+    "Tool", 
+    "ToolRegistry", 
+    "SmartStreamer", 
+    "ThinkColorStreamer"
+]

@@ -7,7 +7,6 @@ from typing import Optional
 
 import requests
 
-
 def web_search(query: str, count: int = 5) -> str:
     """Search the web for a query. Returns a list of results with titles and snippets."""
     try:

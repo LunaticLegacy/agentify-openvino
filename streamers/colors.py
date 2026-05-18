@@ -1,0 +1,8 @@
+GRAY        = "\033[90m"
+DARK_ORANGE = "\033[38;5;208m"
+WHITE       = "\033[97m"
+RESET       = "\033[0m"
+BOLD        = "\033[1m"
+DIM         = "\033[2m"
+CLEAR_LINE  = "\033[2K"
+CURSOR_UP   = "\033[A"

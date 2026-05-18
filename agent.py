@@ -25,12 +25,12 @@ class GenerationInterrupted(Exception):
     Raised when the user presses Ctrl+C during model generation.
     The partial output is discarded and NOT added to conversation history.
     """
-    pass
+    
 
 import openvino as ov
 import openvino_genai as ov_genai
 
-from tool_registry import Tool, ToolRegistry
+from .tool_registry import Tool, ToolRegistry
 
 
 # ── Regex that extracts JSON tool calls from model output ──────────────────
@@ -98,8 +98,8 @@ class Agent:
 
     def _register_default_tools(self):
         """Register the six built-in tools into self.registry."""
-        from tools.web import web_search, web_fetch
-        from tools.files import file_read, file_write, file_list, run_command
+        from .tools.web import web_search, web_fetch
+        from .tools.files import file_read, file_write, file_list, run_command
 
         # Each Tool has a name, description (for the model), and a Python
         # function that executes it.  Parameters are auto-derived from the

@@ -108,6 +108,7 @@ class ToolRegistry:
         for t in self._tools.values():
             lines.append(f"\n  - {t.name}: {t.description}")
             lines.append(f"    Parameters: {json.dumps(t.parameters, ensure_ascii=False)}")
+            lines.append(f"    Param types: {t.parameters['properties']}")
 
         lines.append("")
         return "\n".join(lines)
