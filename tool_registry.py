@@ -105,6 +105,8 @@ class ToolRegistry:
             '</tool_call>',
             "",
             "After the tool responds, continue the conversation naturally.",
+            "Do not repeat the same tool call with identical arguments.",
+            "If you already searched once, summarize the result instead of searching again unless new information is required.",
             "",
             "Available tools:",
         ]

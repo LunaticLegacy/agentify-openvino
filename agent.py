@@ -51,8 +51,9 @@ TOOL_CALL_PATTERN = re.compile(
 SYSTEM_PROMPT_BASE = (
     "You are a helpful AI assistant with access to tools. "
     "You can use tools to search the web, read/write files, and run commands. "
-    "Think step by step. When you need information, call a tool. "
-    "When you have enough information, answer the user's question directly."
+    "Think briefly and only use a tool when it adds new information. "
+    "Do not repeat the same tool call with the same arguments. "
+    "After one useful tool result, summarize and answer directly."
 )
 
 
@@ -72,17 +73,23 @@ class Agent:
         self,
         model_path: str,
         device: str = "CPU",
+        device_config: Optional[dict] = None,
+        max_new_tokens: int = 8192,
         system_prompt: Optional[str] = None,
         max_tool_rounds: int = 10,
     ):
         self.model_path = model_path
         self.device = device
         self.max_tool_rounds = max_tool_rounds
+        self.max_new_tokens = max_new_tokens
+        self.device_config = dict(device_config or {})
 
         # ── Load the OpenVINO GenAI model ────────────────────────────────
         # LLMPipeline wraps tokenizer + model + generation config.
         # It's the main inference interface.
-        self.pipe = ov_genai.LLMPipeline(model_path, device)
+        # Device-specific options are useful for NPU, where prompt length
+        # and response length limits are different from CPU/GPU defaults.
+        self.pipe = ov_genai.LLMPipeline(model_path, device, self.device_config)
 
         # ── Register built-in tools (web search, file I/O, shell) ────────
         self.registry = ToolRegistry()
@@ -206,6 +213,10 @@ class Agent:
         print(f"  ✅ Result: {result[:200]}{'...' if len(result) > 200 else ''}")
         return result
 
+    def _tool_call_signature(self, tool_calls: List[dict]) -> str:
+        """Create a stable signature for a batch of tool calls."""
+        return json.dumps(tool_calls, sort_keys=True, ensure_ascii=False)
+
     def chat(self, message: str, stream: bool = True,
              external_streamer: Optional[callable] = None) -> str:
         """
@@ -223,6 +234,7 @@ class Agent:
         """
         full_response = ""
         tool_rounds = 0
+        last_tool_call_signature = ""
 
         while tool_rounds < self.max_tool_rounds:
             # Step 1: build the prompt from history + current message
@@ -241,6 +253,15 @@ class Agent:
             if not tool_calls:
                 full_response = raw_output
                 break  # normal response — exit the loop
+
+            tool_call_signature = self._tool_call_signature(tool_calls)
+            if tool_call_signature == last_tool_call_signature:
+                full_response = (
+                    "I stopped because the model repeated the same tool call. "
+                    "Please refine the request or ask me to summarize the results."
+                )
+                break
+            last_tool_call_signature = tool_call_signature
 
             # Execute each tool call and inject results into history
             for tc in tool_calls:
@@ -262,8 +283,11 @@ class Agent:
             full_response = raw_output if 'raw_output' in locals() \
                 else "I've reached the maximum number of tool calls."
 
-        # Save a clean version (without tool_call markup) to history
-        self.messages.append({"role": "assistant", "content": full_response})
+        # Save a clean version (without tool_call markup) to history.
+        # Avoid duplicating the final assistant message when the last raw
+        # model output was already the final response.
+        if not self.messages or self.messages[-1].get("content") != full_response:
+            self.messages.append({"role": "assistant", "content": full_response})
 
         return full_response
 
@@ -291,6 +315,7 @@ class Agent:
         config.temperature = 0.7
         config.top_p = 0.9
         config.top_k = 50
+        config.max_new_tokens = self.max_new_tokens
 
         if stream:
             collected = []  # accumulate subwords to reconstruct the full text
@@ -367,7 +392,15 @@ class Agent:
 def create_agent(
     model_path: str = "/home/luna/Documents/llm/models/qwen3-4b-int8-ov/",
     device: str = "CPU",
-    max_tool_rounds: int = 3
+    device_config: Optional[dict] = None,
+    max_new_tokens: int = 8192,
+    max_tool_rounds: int = 3,
 ) -> Agent:
     """Factory function to create a ready-to-use agent with defaults."""
-    return Agent(model_path=model_path, device=device, max_tool_rounds=max_tool_rounds)
+    return Agent(
+        model_path=model_path,
+        device=device,
+        device_config=device_config,
+        max_new_tokens=max_new_tokens,
+        max_tool_rounds=max_tool_rounds,
+    )
